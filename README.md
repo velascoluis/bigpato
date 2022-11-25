@@ -1,16 +1,17 @@
 # BigPato: a smart SQL client for BigQuery and duckDB
 
-BigPato is a experimental python package that implements a smart SQL router between two SQL backend engines: BigQuery and duckDB.
+BigPato is a experimental python package that implements a smart SQL router between two SQL backend engines: `BigQuery` and `duckDB`.
 
-The overal idea is maintaning a hybrid database, where most used tables will be located at our local computer (e.g. laptop) and the rest in a cloud DWH like BigQuery.
-BigPato implements:
-- A simple automatic data tiering mechanism that updated local storage on request.
-- A SQL transpilation between BQ and duckDB SQL engines.
-- A unified interface that redirecte queries to the most performant engine.
+The overal idea is maintaning a hybrid database, where the most used tables will be located at our local computer (e.g. laptop) and the rest in a cloud DWH like `BigQuery`.
+
+`BigPato` implements:
+- A simple automatic data tiering mechanism that updates local storage on request.
+- A SQL transpilation between `BigQuery` and `duckDB` SQL engines, so same query works on both engines.
+- A unified interface that redirects queries to the most performant engine and return a `pandas` dataframe with they query ouptput
 
 ## Example run
 
-Import the package and create a new client:
+Import the package and create a new `BigPato` client calling `BigPato`:
 
 ```python
 from bigpato import bigpato
@@ -28,20 +29,20 @@ bp_client = bigpato.BigPato(bq_project=bq_project, bq_database=bq_database, bq_k
 
 The constructor takes the following arguments:
 
-* bq_project = Google Cloud Platform project 
-* bq_database = BigQuery dataset to use, it should be already created. BigPato only supports querying tables under the same dataset
-* bq_key = Service Account secrets JSON key with enough permissions to execute SQL queries and export data to GCS
-* duckdb_db = Local duckDB metadata file, if it is not present it will be created on the first run
-* local_duck_folder = A local folder where the duckDB will cache tables 
-* export_bq_bucket = A GCS bucket that will be used to export BigQuery tables in parquet format.
+* `bq_project` = Google Cloud Platform project 
+* `bq_database` = BigQuery dataset to use, it should be already created. BigPato only supports querying tables under the same dataset
+* `bq_key` = Service Account secrets JSON key with enough permissions to execute SQL queries and export data to GCS
+* `duckdb_db` = Local duckDB metadata file, if it is not present it will be created on the first run
+* `local_duck_folder` = A local folder where the duckDB will cache tables 
+* `export_bq_bucket` = A GCS bucket that will be used to export BigQuery tables in parquet format.
 
-Inspect the table location metadata:
+Inspect the table location metadata calling `get_metadata_dict()`:
 
 ```python
 print(bigpato_client.get_metadata_dict())
 
 ```
-That will show where tables are located:
+`BigPato` maintains a interal catalog with information about the tables deployed in the specified BigQuery dataset and the tables promoted to local storage (also registered on the `duckDB` catalog). That will return the tables location:
 
 ```python
 {'call_center': {'location': 'local', 'usage': 0},
@@ -51,32 +52,33 @@ That will show where tables are located:
 }
 ```
 
-In the example above the table `call_center` is a local table accesible by duckDB and the tables `catalog_page` and `web_returns` are tables in BigQuery.
+In the example above we have a dataset at BigQuery with the TPC-DS tables, but some tables have been already promoted to local in previous executions.
+In this case, the table `call_center` is a local table accesible by `duckDB` and the tables `catalog_page` and `web_returns` are tables in `BigQuery`.
 
-Run a query against a BigQuery located table , the `exec_query` method returns a `pandas` dataframe
+Run a query against a `BigQuery` located table , the `exec_query` method get a SQL query and returns a `pandas` dataframe
 
 ```python
   df = bigpato_client.exec_query("SELECT * FROM catalog_page")
 ```
-Note that there is no need for using the `<DATASET>.<TABLE_NAME>` syntax
+Note that there is no need for using the `BigQuery` `<DATASET>.<TABLE_NAME>` syntax
 
 
-Run a query against a duckDB located table , the `exec_query` method returns a `pandas` dataframe
+Now, run a query against a `duckDB` located table , the `exec_query` method get a SQL query and returns a `pandas` dataframe
 
 ```python
   df = bigpato_client.exec_query("SELECT * FROM call_center")
 ```
-Note that there is no need for using duckDB dialect, BigPato transpiles between BigQuery and duckDB SQL dialects
+Note that there is no need for using the `duckDB` SQL dialect, `BigPato` transpiles between `BigQuery` and `duckDB` SQL dialects
 
 
-Inspect the LRU candidate cache:
+Inspect the LRU candidate cache, this keeps track of the most recently used tables:
 
 ```python
 print(bigpato_client.get_cache())
 
 ```
 
-This will show the top `LRU_TABLE_CAPACITY` (10) most used tables by previous queries, in this case it will show the previos queried table. Once the cache limit is reached , old tables will be evicted
+This will show the top `LRU_TABLE_CAPACITY` (by default setup at 10) most used tables by previous queries, in this case it will show the previous queried tables `catalog_page` and `call_centers`. Once the cache limit is reached , old tables will be evicted
 
 ```python
 OrderedDict([('catalog_page', 'catalog_page'), ('call_center', 'call_center')])
