@@ -1,6 +1,6 @@
 # BigPato: a smart SQL client for BigQuery and duckDB
 
-BigPato is a experimental python package that implements smart SQL router between two backend engines: BigQuery and duckDB.
+BigPato is a experimental python package that implements a smart SQL router between two SQL backend engines: BigQuery and duckDB.
 
 The overal idea is maintaning a hybrid database, where most used tables will be located at our local computer (e.g. laptop) and the rest in a cloud DWH like BigQuery.
 BigPato implements:
