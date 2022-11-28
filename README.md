@@ -6,6 +6,9 @@ BigPato is a experimental python package that implements a smart SQL router betw
 
 The overal idea is maintaning a hybrid database, where the most used tables will be located at our local computer (e.g. laptop) and the rest in a cloud DWH like `BigQuery`.
 
+
+![BigPato working with streamlit](assets/bigpato_arch.png)
+
 `BigPato` implements:
 - A simple automatic data tiering mechanism that updates local storage on request.
 - A SQL transpilation between `BigQuery` and `duckDB` SQL engines, so same query works on both engines.
